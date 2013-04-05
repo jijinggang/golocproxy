@@ -16,7 +16,7 @@ func main() {
 	flag.Usage = util.Usage
 	flag.Parse()
 
-	println("golocproxy client starting: ", local, "->", remote)
+	println("golocproxy client starting: ", *local, "->", *remote)
 	proxy, err := net.Dial("tcp", *remote)
 	if err != nil {
 		log.Fatal("CAN'T CONNECT:", *remote, " err:", err)
@@ -37,12 +37,23 @@ func main() {
 	}
 }
 
+//客户端单次连接处理
 func session() {
-	session, err := net.Dial("tcp", *remote)
+	println("Create Session")
+	rp, err := net.Dial("tcp", *remote)
 	if err != nil {
-		println("Can't' connect:", remote, " err:", err)
+		println("Can't' connect:", *remote, " err:", err)
 		return
 	}
-	defer session.Close()
+	//defer rp.Close()
+	rp.Write([]byte(util.C2P_SESSION))
 
+	lp, err := net.Dial("tcp", *local)
+	if err != nil {
+		println("Can't' connect:", *local, " err:", err)
+		return
+	}
+	//defer lp.Close()
+	go util.CopyFromTo(rp, lp)
+	go util.CopyFromTo(lp, rp)
 }
