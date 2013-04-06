@@ -5,10 +5,11 @@ import (
 	"flag"
 	"log"
 	"net"
+	"time"
 )
 
 var (
-	port = flag.String("p", "8010", "Access the service on this port.")
+	port = flag.String("p", "8010", "The Listen port of golocproxy, users will access the port.")
 )
 
 func main() {
@@ -26,7 +27,8 @@ func main() {
 	for {
 		conn, err := server.Accept()
 		if err != nil {
-			log.Fatal("CAN'T ACCEPT: ", err)
+			log.Println("Can't Accept: ", err)
+			continue
 		}
 		go onConnect(conn, chSession)
 	}
@@ -35,15 +37,19 @@ func main() {
 func onConnect(conn net.Conn, chSession chan net.Conn) {
 	strConn := util.Conn2Str(conn)
 	log.Println("Connect:", strConn)
-	//defer func() {
-	//	log.Println("Close:", strConn)
-	//	conn.Close()
-	//}()
 	var buf [util.TOKEN_LEN]byte
+	conn.SetReadDeadline(time.Now())
 	n, err := conn.Read(buf[0:])
+	conn.SetReadDeadline(time.Time{})
+	//println("Read:", string(buf[0:n]))
 	if err != nil {
-		log.Println("Can't Read: ", err)
-		return
+		errNet := err.(net.Error)
+		//log.Println("Can't Read1: ", errNet)
+		if !errNet.Temporary() {
+			log.Println("Can't Read: ", errNet)
+			conn.Close()
+			return
+		}
 	}
 	if n == util.TOKEN_LEN {
 		token := string(buf[0:n])
@@ -65,22 +71,25 @@ func onConnect(conn net.Conn, chSession chan net.Conn) {
 
 }
 
+//代理客户端连接
 var clientProxy net.Conn = nil
 
 func initC2PConnect(conn net.Conn) {
-	defer conn.Close()
+	defer util.CloseConn(conn) // conn.Close()
 	if clientProxy != nil {
 		conn.Write([]byte("P2C:service existing"))
 		return
 	}
 	println("REG service")
 	clientProxy = conn
+	defer func() {
+		clientProxy = nil
+	}()
 	var buf [1]byte
 	for {
 		_, err := clientProxy.Read(buf[0:])
 		if err != nil {
 			println("UNREG service")
-			clientProxy = nil
 			break
 		}
 	}
@@ -91,13 +100,15 @@ func initClientSession(conn net.Conn, chSession chan net.Conn) {
 func notifyClientCreateSession(conn net.Conn, bufReaded []byte, chSession chan net.Conn) {
 	if clientProxy == nil {
 		conn.Write([]byte("NO SERVICE"))
-		conn.Close()
+		util.CloseConn(conn)
 		return
 	}
 	clientProxy.Write([]byte(util.P2C_NEW_SESSION))
 	connSession := <-chSession
 	log.Println("Start transfer...")
-	connSession.Write(bufReaded)
+	if len(bufReaded) > 0 {
+		connSession.Write(bufReaded)
+	}
 	go util.CopyFromTo(conn, connSession)
 	go util.CopyFromTo(connSession, conn)
 }

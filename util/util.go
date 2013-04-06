@@ -27,8 +27,11 @@ func Conn2Str(conn net.Conn) string {
 }
 
 func CopyFromTo(a, b io.ReadWriteCloser) {
-	defer func() {
-		a.Close()
-	}()
 	io.Copy(a, b)
+	CloseConn(a)
+}
+
+func CloseConn(a io.ReadWriteCloser) {
+	println("CLOSE")
+	a.Close()
 }

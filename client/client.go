@@ -43,17 +43,18 @@ func session() {
 	rp, err := net.Dial("tcp", *remote)
 	if err != nil {
 		println("Can't' connect:", *remote, " err:", err)
+		rp.Close()
 		return
 	}
-	//defer rp.Close()
+	//defer util.CloseConn(rp)
 	rp.Write([]byte(util.C2P_SESSION))
-
 	lp, err := net.Dial("tcp", *local)
 	if err != nil {
 		println("Can't' connect:", *local, " err:", err)
+		rp.Close()
+		lp.Close()
 		return
 	}
-	//defer lp.Close()
 	go util.CopyFromTo(rp, lp)
 	go util.CopyFromTo(lp, rp)
 }
