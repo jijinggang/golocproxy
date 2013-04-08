@@ -3,10 +3,10 @@ package main
 import (
 	"../util"
 	"flag"
+	//	"io"
 	"log"
 	"net"
 	"time"
-	"io"
 )
 
 var (
@@ -39,11 +39,17 @@ func onConnect(conn net.Conn, chSession chan net.Conn) {
 	strConn := util.Conn2Str(conn)
 	log.Println("Connect:", strConn)
 	var buf [util.TOKEN_LEN]byte
-	conn.SetReadDeadline(time.Now())
+	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
 	n, err := conn.Read(buf[0:])
 	conn.SetReadDeadline(time.Time{})
 	//println("Read:", string(buf[0:n]))
-	if err == io.EOF {//对方已关闭
+	if err != nil {
+		errNet := err.(net.Error)
+		if errNet != nil && errNet.Timeout() {
+			log.Println("Timeout:", string(buf[0:n]), err)
+			notifyClientCreateSession(conn, buf[0:n], chSession)
+			return
+		}
 		log.Println("Can't Read: ", err)
 		conn.Close()
 		return

@@ -54,7 +54,6 @@ func session() {
 	rp, err := net.Dial("tcp", *remote)
 	if err != nil {
 		log.Println("Can't' connect:", *remote, " err:", err)
-		rp.Close()
 		return
 	}
 	//defer util.CloseConn(rp)
