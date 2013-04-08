@@ -19,4 +19,4 @@ Usage
 
 Download
 --------
-<https://github.com/jijinggang/golocproxy/blob/master/golocproxy.zip?raw=true>
+<https://github.com/jijinggang/golocproxy/blob/master/bin/golocproxy.zip?raw=true>

@@ -63,7 +63,6 @@ func session() {
 	if err != nil {
 		println("Can't' connect:", *local, " err:", err)
 		rp.Close()
-		lp.Close()
 		return
 	}
 	go util.CopyFromTo(rp, lp)
