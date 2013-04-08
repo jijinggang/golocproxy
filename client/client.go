@@ -5,6 +5,7 @@ import (
 	"flag"
 	"log"
 	"net"
+	"time"
 )
 
 var (
@@ -17,9 +18,17 @@ func main() {
 	flag.Parse()
 
 	println("golocproxy client starting: ", *local, "->", *remote)
+	for{
+		connectServer()
+		time.Sleep(10 * time.Second) //retry after 10s
+	}
+}
+
+func connectServer(){
 	proxy, err := net.Dial("tcp", *remote)
 	if err != nil {
-		log.Fatal("CAN'T CONNECT:", *remote, " err:", err)
+		log.Println("CAN'T CONNECT:", *remote, " err:", err)
+		return
 	}
 	defer proxy.Close()
 	proxy.Write([]byte(util.C2P_CONNECT))
@@ -28,13 +37,15 @@ func main() {
 	for {
 		n, err := proxy.Read(buf[0:])
 		if err != nil {
-			log.Fatal("CAN'T READ,", " err:", err)
+			log.Println("CAN'T READ,", " err:", err)
+			return
 		}
 		token := string(buf[0:n])
 		if token == util.P2C_NEW_SESSION {
 			go session()
 		}
 	}
+	
 }
 
 //客户端单次连接处理

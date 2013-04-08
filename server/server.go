@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"time"
+	"io"
 )
 
 var (
@@ -42,14 +43,10 @@ func onConnect(conn net.Conn, chSession chan net.Conn) {
 	n, err := conn.Read(buf[0:])
 	conn.SetReadDeadline(time.Time{})
 	//println("Read:", string(buf[0:n]))
-	if err != nil {
-		errNet := err.(net.Error)
-		//log.Println("Can't Read1: ", errNet)
-		if !errNet.Temporary() {
-			log.Println("Can't Read: ", errNet)
-			conn.Close()
-			return
-		}
+	if err == io.EOF {//对方已关闭
+		log.Println("Can't Read: ", err)
+		conn.Close()
+		return
 	}
 	if n == util.TOKEN_LEN {
 		token := string(buf[0:n])
