@@ -17,14 +17,14 @@ func main() {
 	flag.Usage = util.Usage
 	flag.Parse()
 
-	println("golocproxy client starting: ", *local, "->", *remote)
-	for{
+	log.Println("golocproxy client starting: ", *local, "->", *remote)
+	for {
 		connectServer()
 		time.Sleep(10 * time.Second) //retry after 10s
 	}
 }
 
-func connectServer(){
+func connectServer() {
 	proxy, err := net.Dial("tcp", *remote)
 	if err != nil {
 		log.Println("CAN'T CONNECT:", *remote, " err:", err)
@@ -45,15 +45,15 @@ func connectServer(){
 			go session()
 		}
 	}
-	
+
 }
 
 //客户端单次连接处理
 func session() {
-	println("Create Session")
+	log.Println("Create Session")
 	rp, err := net.Dial("tcp", *remote)
 	if err != nil {
-		println("Can't' connect:", *remote, " err:", err)
+		log.Println("Can't' connect:", *remote, " err:", err)
 		rp.Close()
 		return
 	}
@@ -61,7 +61,7 @@ func session() {
 	rp.Write([]byte(util.C2P_SESSION))
 	lp, err := net.Dial("tcp", *local)
 	if err != nil {
-		println("Can't' connect:", *local, " err:", err)
+		log.Println("Can't' connect:", *local, " err:", err)
 		rp.Close()
 		return
 	}
