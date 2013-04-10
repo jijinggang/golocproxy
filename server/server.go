@@ -47,7 +47,7 @@ func onConnect(conn net.Conn, chSession chan net.Conn) {
 		errNet := err.(net.Error)
 		if errNet != nil && errNet.Timeout() {
 			log.Println("Timeout:", string(buf[0:n]), err)
-			notifyClientCreateSession(conn, buf[0:n], chSession)
+			userConnect(conn, buf[0:n], chSession)
 			return
 		}
 		log.Println("Can't Read: ", err)
@@ -59,16 +59,16 @@ func onConnect(conn net.Conn, chSession chan net.Conn) {
 		//log.Println("token=", token)
 		if token == util.C2P_CONNECT {
 			//内网服务器启动时连接代理，建立长连接
-			initC2PConnect(conn)
+			clientConnect(conn)
 			return
 		} else if token == util.C2P_SESSION {
 			//为客户端的单次连接请求建立一个临时的"内网服务器<->代理"的连接
-			initClientSession(conn, chSession)
+			initUserSession(conn, chSession)
 			return
 		}
 	}
 	//普通的客户端到代理服务器的连接
-	notifyClientCreateSession(conn, buf[0:n], chSession)
+	userConnect(conn, buf[0:n], chSession)
 	//println(string(buf[0:n]))
 	//conn.Write(buf[0:n])
 
@@ -77,13 +77,14 @@ func onConnect(conn net.Conn, chSession chan net.Conn) {
 //代理客户端连接
 var clientProxy net.Conn = nil
 
-func initC2PConnect(conn net.Conn) {
+//处理golocproxy client的连接
+func clientConnect(conn net.Conn) {
 	defer util.CloseConn(conn) // conn.Close()
 	if clientProxy != nil {
 		conn.Write([]byte("P2C:service existing"))
 		return
 	}
-	println("REG service")
+	println("REG SERVICE")
 	clientProxy = conn
 	defer func() {
 		clientProxy = nil
@@ -92,26 +93,31 @@ func initC2PConnect(conn net.Conn) {
 	for {
 		_, err := clientProxy.Read(buf[0:])
 		if err != nil {
-			println("UNREG service")
+			log.Println("UNREG SERVICE")
 			break
 		}
 	}
 }
-func initClientSession(conn net.Conn, chSession chan net.Conn) {
+
+func initUserSession(conn net.Conn, chSession chan net.Conn) {
 	chSession <- conn
 }
-func notifyClientCreateSession(conn net.Conn, bufReaded []byte, chSession chan net.Conn) {
+
+//处理最终用户的连接
+func userConnect(conn net.Conn, bufReaded []byte, chSession chan net.Conn) {
 	if clientProxy == nil {
 		conn.Write([]byte("NO SERVICE"))
 		util.CloseConn(conn)
 		return
 	}
-	clientProxy.Write([]byte(util.P2C_NEW_SESSION))
-	connSession := <-chSession
-	log.Println("Start transfer...")
-	if len(bufReaded) > 0 {
-		connSession.Write(bufReaded)
+	_,err := clientProxy.Write([]byte(util.P2C_NEW_SESSION))
+	if err != nil{
+		conn.Write([]byte("SERVICE FAIL"))
+		util.CloseConn(conn)
+		return
 	}
-	go util.CopyFromTo(conn, connSession)
-	go util.CopyFromTo(connSession, conn)
+	connSession := <-chSession
+	log.Println("Transfer...")
+	go util.CopyFromTo(conn, connSession, bufReaded)
+	go util.CopyFromTo(connSession, conn, nil)
 }

@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	local  = flag.String("l", "127.0.0.1:80", "Access of the local app service")
-	remote = flag.String("r", "127.0.0.1:8010", "Access of the golocproxy server")
+	local  = flag.String("l", "127.0.0.1:80", "Address of the local app service")
+	remote = flag.String("r", "127.0.0.1:8010", "Address of the golocproxy server")
 )
 
 func main() {
@@ -64,6 +64,6 @@ func session() {
 		rp.Close()
 		return
 	}
-	go util.CopyFromTo(rp, lp)
-	go util.CopyFromTo(lp, rp)
+	go util.CopyFromTo(rp, lp, nil)
+	go util.CopyFromTo(lp, rp, nil)
 }
