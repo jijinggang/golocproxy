@@ -25,7 +25,7 @@ func main() {
 }
 
 func connectServer() {
-	proxy, err := net.Dial("tcp", *remote)
+	proxy, err := net.DialTimeout("tcp", *remote, 5 * time.Second)
 	if err != nil {
 		log.Println("CAN'T CONNECT:", *remote, " err:", err)
 		return
