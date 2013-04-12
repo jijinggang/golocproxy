@@ -24,7 +24,7 @@ func main() {
 	}
 	log.Println("Starting golocproxy on port:", *port)
 	defer server.Close()
-	chSession := make(chan net.Conn)
+	chSession := make(chan net.Conn,100)
 	for {
 		conn, err := server.Accept()
 		if err != nil {
@@ -44,8 +44,7 @@ func onConnect(conn net.Conn, chSession chan net.Conn) {
 	conn.SetReadDeadline(time.Time{})
 	//println("Read:", string(buf[0:n]))
 	if err != nil {
-		errNet := err.(net.Error)
-		if errNet != nil && errNet.Timeout() {
+		if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
 			log.Println("Timeout:", string(buf[0:n]), err)
 			userConnect(conn, buf[0:n], chSession)
 			return
@@ -81,7 +80,7 @@ var clientProxy net.Conn = nil
 func clientConnect(conn net.Conn) {
 	defer util.CloseConn(conn) // conn.Close()
 	if clientProxy != nil {
-		conn.Write([]byte("P2C:service existing"))
+		conn.Write([]byte("SERVICE EXIST"))
 		return
 	}
 	println("REG SERVICE")
@@ -99,6 +98,8 @@ func clientConnect(conn net.Conn) {
 	}
 }
 
+
+
 func initUserSession(conn net.Conn, chSession chan net.Conn) {
 	chSession <- conn
 }
@@ -110,14 +111,28 @@ func userConnect(conn net.Conn, bufReaded []byte, chSession chan net.Conn) {
 		util.CloseConn(conn)
 		return
 	}
-	_,err := clientProxy.Write([]byte(util.P2C_NEW_SESSION))
-	if err != nil{
+	_, err := clientProxy.Write([]byte(util.P2C_NEW_SESSION))
+	if err != nil {
 		conn.Write([]byte("SERVICE FAIL"))
 		util.CloseConn(conn)
 		return
 	}
-	connSession := <-chSession
+	connSession := recvSession(chSession)// := <-chSession
+	if(connSession == nil){
+		util.CloseConn(conn)
+		return
+	}
 	log.Println("Transfer...")
 	go util.CopyFromTo(conn, connSession, bufReaded)
 	go util.CopyFromTo(connSession, conn, nil)
+}
+//加入超时
+func recvSession(ch chan net.Conn) net.Conn{
+	var conn net.Conn = nil
+	select{
+		case conn = <- ch :
+		case  <-time.After(time.Second * 5):
+			conn = nil
+	}
+	return conn
 }

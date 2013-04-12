@@ -3,6 +3,7 @@ package main
 import (
 	"../util"
 	"flag"
+//	"io"
 	"log"
 	"net"
 	"time"
@@ -25,7 +26,7 @@ func main() {
 }
 
 func connectServer() {
-	proxy, err := net.DialTimeout("tcp", *remote, 5 * time.Second)
+	proxy, err := net.DialTimeout("tcp", *remote, 5*time.Second)
 	if err != nil {
 		log.Println("CAN'T CONNECT:", *remote, " err:", err)
 		return
@@ -35,15 +36,23 @@ func connectServer() {
 
 	var buf [util.TOKEN_LEN]byte
 	for {
+		proxy.SetReadDeadline(time.Now().Add(2 * time.Second))
 		n, err := proxy.Read(buf[0:])
-		if err != nil {
-			log.Println("CAN'T READ,", " err:", err)
-			return
+	//	proxy.SetReadDeadline(time.Time{})
+		if err == nil {
+			token := string(buf[0:n])
+			if token == util.P2C_NEW_SESSION {
+				go session()
+			}
+		} else {
+			if nerr, ok := err.(net.Error); ok && nerr.Timeout(){
+				continue
+			} else {
+				log.Println("SERVER CLOSE,", " err:", err)
+				return
+			}
 		}
-		token := string(buf[0:n])
-		if token == util.P2C_NEW_SESSION {
-			go session()
-		}
+		//time.Sleep(2*time.Second)
 	}
 
 }
