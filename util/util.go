@@ -13,6 +13,7 @@ const (
 	TOKEN_LEN       = 4
 	C2P_CONNECT     = "C2P0"
 	C2P_SESSION     = "C2P1"
+	C2P_KEEP_ALIVE  = "C2P2"
 	P2C_NEW_SESSION = "P2C1"
 )
 

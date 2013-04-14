@@ -46,6 +46,7 @@ func connectServer() {
 			}
 		} else {
 			if nerr, ok := err.(net.Error); ok && nerr.Timeout(){
+				proxy.Write([]byte(util.C2P_KEEP_ALIVE)) //send KeepAlive msg
 				continue
 			} else {
 				log.Println("SERVER CLOSE,", " err:", err)

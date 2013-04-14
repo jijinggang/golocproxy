@@ -88,7 +88,7 @@ func clientConnect(conn net.Conn) {
 	defer func() {
 		clientProxy = nil
 	}()
-	var buf [1]byte
+	var buf [util.TOKEN_LEN]byte
 	for {
 		_, err := clientProxy.Read(buf[0:])
 		if err != nil {
