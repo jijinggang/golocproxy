@@ -1,6 +1,6 @@
 golocproxy
 ==========
-轻量级超强反向代理软件，用golang开发，通过公共可知的服务器端口代理，把局域网内任何主机的本地服务发布给局域网外的用户，可用来跨越各种防火墙。
+轻量级超强反向代理软件，用go语言开发，通过公共可知的服务器端口进行代理，把局域网内任何主机的本地服务发布给局域网外的用户，可用来跨越各种防火墙。
 
 Usage
 -----
@@ -12,11 +12,10 @@ Usage
 
 使用golocproxy可实现这一要求
 
-1. 找一台A和B都能访问的内网或公网服务器P(61.1.1.2)
-2. 在P上启动golocproxy服务程序 `server -p="8010"`
-3. 在A上启动golocproxy客户程序 `client -l="127.0.0.1:80" -r="61.1.1.2:8010"`
-4. 外部的任何主机直接通过`http://61.1.1.2：8010`即可访问A的http服务
+1. 找一台A和B都能访问的内网或公网服务器P(61.1.1.2)，在其上启动golocproxy服务程序 `./server -p="8010"`
+2. 在A上启动golocproxy客户程序 `./client -l="127.0.0.1:80" -r="61.1.1.1:8010"`
+3. 外部的任何主机直接通过`http://61.1.1.1:8010`即可访问A的http服务
 
 Download
 --------
-<https://github.com/jijinggang/golocproxy/blob/master/golocproxy.zip?raw=true>
+<https://github.com/jijinggang/golocproxy/blob/master/bin/golocproxy.zip?raw=true>

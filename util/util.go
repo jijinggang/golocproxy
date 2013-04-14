@@ -13,6 +13,7 @@ const (
 	TOKEN_LEN       = 4
 	C2P_CONNECT     = "C2P0"
 	C2P_SESSION     = "C2P1"
+	C2P_KEEP_ALIVE  = "C2P2"
 	P2C_NEW_SESSION = "P2C1"
 )
 
@@ -26,12 +27,18 @@ func Conn2Str(conn net.Conn) string {
 	return conn.LocalAddr().String() + " <-> " + conn.RemoteAddr().String()
 }
 
-func CopyFromTo(a, b io.ReadWriteCloser) {
-	io.Copy(a, b)
-	CloseConn(a)
+func CopyFromTo(r, w io.ReadWriteCloser, buf []byte) {
+	defer CloseConn(r)
+	if buf != nil && len(buf) > 0 {
+		_, err := w.Write(buf)
+		if err != nil {
+			return
+		}
+	}
+	io.Copy(r, w)
 }
 
 func CloseConn(a io.ReadWriteCloser) {
-	println("CLOSE")
+	fmt.Println("CLOSE")
 	a.Close()
 }
