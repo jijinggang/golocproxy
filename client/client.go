@@ -46,10 +46,17 @@ func connectServer() {
 			}
 		} else {
 			if nerr, ok := err.(net.Error); ok && nerr.Timeout(){
-				//proxy.Write([]byte(util.C2P_KEEP_ALIVE)) //send KeepAlive msg
+				//log.Println("Timeout")
+				proxy.SetWriteDeadline(time.Now().Add(2 * time.Second))
+				_,werr := proxy.Write([]byte(util.C2P_KEEP_ALIVE)) //send KeepAlive msg
+				if(werr != nil){
+					log.Println("CAN'T WRITE, err:",werr)
+					return
+				}
+				
 				continue
 			} else {
-				log.Println("SERVER CLOSE,", " err:", err)
+				log.Println("SERVER CLOSE, err:", err)
 				return
 			}
 		}
