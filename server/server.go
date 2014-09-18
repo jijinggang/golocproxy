@@ -24,7 +24,7 @@ func main() {
 	}
 	log.Println("Starting golocproxy on port:", *port)
 	defer server.Close()
-	chSession := make(chan net.Conn,100)
+	chSession := make(chan net.Conn, 100)
 	for {
 		conn, err := server.Accept()
 		if err != nil {
@@ -39,7 +39,7 @@ func onConnect(conn net.Conn, chSession chan net.Conn) {
 	strConn := util.Conn2Str(conn)
 	log.Println("Connect:", strConn)
 	var buf [util.TOKEN_LEN]byte
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	conn.SetReadDeadline(time.Now().Add(1 * time.Second))
 	n, err := conn.Read(buf[0:])
 	conn.SetReadDeadline(time.Time{})
 	//println("Read:", string(buf[0:n]))
@@ -98,8 +98,6 @@ func clientConnect(conn net.Conn) {
 	}
 }
 
-
-
 func initUserSession(conn net.Conn, chSession chan net.Conn) {
 	chSession <- conn
 }
@@ -117,8 +115,8 @@ func userConnect(conn net.Conn, bufReaded []byte, chSession chan net.Conn) {
 		util.CloseConn(conn)
 		return
 	}
-	connSession := recvSession(chSession)// := <-chSession
-	if(connSession == nil){
+	connSession := recvSession(chSession) // := <-chSession
+	if connSession == nil {
 		util.CloseConn(conn)
 		return
 	}
@@ -126,13 +124,14 @@ func userConnect(conn net.Conn, bufReaded []byte, chSession chan net.Conn) {
 	go util.CopyFromTo(conn, connSession, bufReaded)
 	go util.CopyFromTo(connSession, conn, nil)
 }
+
 //加入超时
-func recvSession(ch chan net.Conn) net.Conn{
+func recvSession(ch chan net.Conn) net.Conn {
 	var conn net.Conn = nil
-	select{
-		case conn = <- ch :
-		case  <-time.After(time.Second * 5):
-			conn = nil
+	select {
+	case conn = <-ch:
+	case <-time.After(time.Second * 5):
+		conn = nil
 	}
 	return conn
 }
