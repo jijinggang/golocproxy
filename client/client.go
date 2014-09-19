@@ -3,7 +3,7 @@ package main
 import (
 	"../util"
 	"flag"
-//	"io"
+	//	"io"
 	"log"
 	"net"
 	"time"
@@ -12,6 +12,7 @@ import (
 var (
 	local  = flag.String("l", "127.0.0.1:80", "Address of the local app service")
 	remote = flag.String("r", "127.0.0.1:8010", "Address of the golocproxy server")
+	pwd    = flag.String("pwd", "jjg", "password to access server")
 )
 
 func main() {
@@ -32,28 +33,28 @@ func connectServer() {
 		return
 	}
 	defer proxy.Close()
-	proxy.Write([]byte(util.C2P_CONNECT))
+	util.WriteString(proxy, *pwd+"\n"+util.C2P_CONNECT)
 
-	var buf [util.TOKEN_LEN]byte
 	for {
 		proxy.SetReadDeadline(time.Now().Add(2 * time.Second))
-		n, err := proxy.Read(buf[0:])
-	//	proxy.SetReadDeadline(time.Time{})
+		msg, err := util.ReadString(proxy)
+		//	proxy.SetReadDeadline(time.Time{})
 		if err == nil {
-			token := string(buf[0:n])
-			if token == util.P2C_NEW_SESSION {
+			if msg == util.P2C_NEW_SESSION {
 				go session()
+			} else {
+				log.Println(msg)
 			}
 		} else {
-			if nerr, ok := err.(net.Error); ok && nerr.Timeout(){
+			if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
 				//log.Println("Timeout")
 				proxy.SetWriteDeadline(time.Now().Add(2 * time.Second))
-				_,werr := proxy.Write([]byte(util.C2P_KEEP_ALIVE)) //send KeepAlive msg
-				if(werr != nil){
-					log.Println("CAN'T WRITE, err:",werr)
+				_, werr := util.WriteString(proxy, util.C2P_KEEP_ALIVE) //send KeepAlive msg
+				if werr != nil {
+					log.Println("CAN'T WRITE, err:", werr)
 					return
 				}
-				
+
 				continue
 			} else {
 				log.Println("SERVER CLOSE, err:", err)
@@ -74,7 +75,7 @@ func session() {
 		return
 	}
 	//defer util.CloseConn(rp)
-	rp.Write([]byte(util.C2P_SESSION))
+	util.WriteString(rp, *pwd+"\n"+util.C2P_SESSION)
 	lp, err := net.Dial("tcp", *local)
 	if err != nil {
 		log.Println("Can't' connect:", *local, " err:", err)

@@ -1,6 +1,8 @@
 package util
 
 import (
+	"encoding/binary"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -15,6 +17,7 @@ const (
 	C2P_SESSION     = "C2P1"
 	C2P_KEEP_ALIVE  = "C2P2"
 	P2C_NEW_SESSION = "P2C1"
+	SEPS            = "\n"
 )
 
 func Usage() {
@@ -41,4 +44,32 @@ func CopyFromTo(r, w io.ReadWriteCloser, buf []byte) {
 func CloseConn(a io.ReadWriteCloser) {
 	fmt.Println("CLOSE")
 	a.Close()
+}
+
+func WriteString(w io.Writer, str string) (int, error) {
+	binary.Write(w, binary.LittleEndian, int32(len(str)))
+	return w.Write([]byte(str))
+}
+
+const MAX_STRING = 10240
+
+func ReadString(r io.Reader) (string, error) {
+	var size int32
+	err := binary.Read(r, binary.LittleEndian, &size)
+	if err != nil {
+		return "", err
+	}
+	if size > MAX_STRING {
+		return "", errors.New("too long string")
+	}
+
+	buff := make([]byte, size)
+	n, err := r.Read(buff)
+	if err != nil {
+		return "", err
+	}
+	if int32(n) != size {
+		return "", errors.New("invalid string size")
+	}
+	return string(buff), nil
 }
