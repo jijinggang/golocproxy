@@ -12,8 +12,8 @@ Usage
 
 使用golocproxy可实现这一要求
 
-1. 找一台A和B都能访问的内网或公网服务器P(61.1.1.2)，在其上启动golocproxy服务程序 `./server -p="8010"`
-2. 在A上启动golocproxy客户程序 `./client -l="127.0.0.1:80" -r="61.1.1.1:8010"`
+1. 找一台A和B都能访问的内网或公网服务器P(61.1.1.2)，在其上启动golocproxy服务程序 `./server -p 8009 -up 8010 -pwd mypassword`
+2. 在A上启动golocproxy客户程序 `./client -l 127.0.0.1:80 -r 61.1.1.1:8009 -pwd mypassword`
 3. 外部的任何主机直接通过`http://61.1.1.1:8010`即可访问A的http服务
 
 Download
